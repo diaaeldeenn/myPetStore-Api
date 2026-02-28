@@ -1,3 +1,5 @@
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger.config.js";
 import express from "express";
 import connectionDB from "./DB/connectionDB.js";
 import userRouter from "./modules/users/user.controller.js";
@@ -22,6 +24,7 @@ const bootstrap = () => {
       .json({ message: err.message, stack: err.stack });
   });
 
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.listen(port, () => console.log(`Sever Work On Port ${port}!`));
 };
 
