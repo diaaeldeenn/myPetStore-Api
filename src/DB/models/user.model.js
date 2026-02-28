@@ -25,16 +25,12 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: function () {
-        return this.provider == ProviderEnum.google ? false : true;
-      },
+      required:true,
       minLength: 8,
     },
     age: {
       type: Number,
-      required: function () {
-        return this.provider == ProviderEnum.google ? false : true;
-      },
+      required:true,
       minLength: 18,
       maxLength: 60,
     },
