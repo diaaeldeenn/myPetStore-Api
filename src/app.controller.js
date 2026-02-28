@@ -10,6 +10,7 @@ const port = process.env.PORT || 3000;
 
 const bootstrap = () => {
   app.use(cors(), express.json());
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.get("/", (req, res) => {
     res.status(200).json({ message: "Welcome In My Api" });
   });
@@ -24,7 +25,6 @@ const bootstrap = () => {
       .json({ message: err.message, stack: err.stack });
   });
 
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
   app.listen(port, () => console.log(`Sever Work On Port ${port}!`));
 };
 
