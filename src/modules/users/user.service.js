@@ -1,4 +1,3 @@
-import { ProviderEnum } from "../../common/enum/user.enum.js";
 import { successResponse } from "../../common/utils/response.success.js";
 import { decrypt, encrypt } from "../../common/utils/security/encrypt.security.js";
 import { CompareHash, Hash } from "../../common/utils/security/hash.security.js";
@@ -34,10 +33,7 @@ export const signIn = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await db_service.findOne({
       model: userModel,
-      filter: {
-        email,
-        provider: ProviderEnum.system,
-      },
+      filter: {email},
     });
     if (!user) {
       throw new Error("User Not Exist",{cause:409});
@@ -45,7 +41,7 @@ export const signIn = async (req, res, next) => {
     if (!CompareHash({plainText:password,cipherText:user.password})) {
       throw new Error("Invalid Password",{cause:400});
     }
-    const token = jwt.sign({ userId: user._id },"DiaaDiaa",{ expiresIn: "1h" });
+    const token = jwt.sign({ userId: user._id },process.env.JWT_SECRET,{ expiresIn: "1h" });
     successResponse({res,message:"LogIn Succefully",data:{token:token}});
   } catch (error) {
     next(error);

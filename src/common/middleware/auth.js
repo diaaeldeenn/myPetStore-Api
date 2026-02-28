@@ -8,7 +8,7 @@ export const authentication = async (req, res, next) => {
     if (!token) {
       throw new Error("Token Not Provide");
     }
-    const decoded = jwt.verify(token, "DiaaDiaa");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
     if(!decoded || !userId){
       throw new Error("Invalid Token");
