@@ -13,9 +13,9 @@ app.use(async (req, res, next) => {
 });
 
 app.use(cors(), express.json());
-app.use(
+app.use("/api-docs", swaggerUi.serve);
+app.get(
   "/api-docs",
-  swaggerUi.serveFiles(swaggerSpec),
   swaggerUi.setup(swaggerSpec)
 );
 app.get("/", (req, res) => {
