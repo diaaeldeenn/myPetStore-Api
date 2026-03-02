@@ -4,9 +4,9 @@ import express from "express";
 import connectionDB from "./DB/connectionDB.js";
 import userRouter from "./modules/users/user.controller.js";
 import cors from "cors";
+
 const app = express();
 const port = process.env.PORT || 3000;
-
 
 const bootstrap = () => {
   app.use(cors(), express.json());
@@ -25,7 +25,12 @@ const bootstrap = () => {
       .json({ message: err.message, stack: err.stack });
   });
 
-  app.listen(port, () => console.log(`Sever Work On Port ${port}!`));
+
+  if (process.env.NODE_ENV !== "production") {
+    app.listen(port, () => console.log(`Sever Work On Port ${port}!`));
+  }
 };
 
-export default bootstrap;
+bootstrap();
+
+export default app;
