@@ -1,5 +1,3 @@
-import swaggerJsdoc from "swagger-jsdoc";
-
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -10,7 +8,9 @@ const options = {
     },
     servers: [
       {
-        url: "https://my-pet-store-api.vercel.app",
+        url: process.env.NODE_ENV === "production"
+          ? "https://my-pet-store-api.vercel.app"
+          : "http://localhost:3000",
       },
     ],
     components: {
@@ -25,7 +25,3 @@ const options = {
   },
   apis: ["./src/modules/**/*.js"],
 };
-
-const swaggerSpec = swaggerJsdoc(options);
-
-export default swaggerSpec;
