@@ -1,3 +1,9 @@
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -13,15 +19,6 @@ const options = {
           : "http://localhost:3000",
       },
     ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        },
-      },
-    },
   },
-  apis: ["./src/modules/**/*.js"],
+  apis: [path.join(__dirname, "../modules/**/*.js")],
 };

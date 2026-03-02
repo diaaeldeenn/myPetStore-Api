@@ -13,7 +13,7 @@ app.use(async (req, res, next) => {
 });
 
 app.use(cors(), express.json());
-app.use("/api-docs",swaggerUi.serve,swaggerUi.setup(swaggerSpec,{explorer: true}));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome In My Api" });
 });
