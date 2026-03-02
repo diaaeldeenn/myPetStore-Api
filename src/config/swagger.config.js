@@ -1,5 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const options = {
   definition: {
     openapi: "3.0.0",
@@ -10,7 +12,9 @@ const options = {
     },
     servers: [
       {
-        url: "https://e-commerce-back-end-production-cd11.up.railway.app",
+        url: isProduction
+          ? "https://my-pet-store-api.vercel.app"
+          : "http://localhost:3000",
       },
     ],
     components: {
