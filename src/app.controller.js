@@ -1,5 +1,3 @@
-import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./config/swagger.config.js";
 import express from "express";
 import connectionDB from "./DB/connectionDB.js";
 import userRouter from "./modules/users/user.controller.js";
@@ -13,11 +11,6 @@ app.use(async (req, res, next) => {
 });
 
 app.use(cors(), express.json());
-app.use("/api-docs", swaggerUi.serve);
-app.get(
-  "/api-docs",
-  swaggerUi.setup(swaggerSpec)
-);
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome In My Api" });
 });
