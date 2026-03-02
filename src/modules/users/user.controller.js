@@ -8,5 +8,6 @@ const userRouter = Router();
 
 userRouter.post("/signup", schema(signUpSchema), US.signUp);
 userRouter.post("/signin", schema(signInSchema), US.signIn);
+userRouter.get("/profile",authentication,US.getProfile);
 
 export default userRouter;

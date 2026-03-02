@@ -41,8 +41,19 @@ export const signIn = async (req, res, next) => {
     if (!CompareHash({plainText:password,cipherText:user.password})) {
       throw new Error("Invalid Password",{cause:400});
     }
-    const token = jwt.sign({ userId: user._id },process.env.JWT_SECRET,{ expiresIn: "1h" });
+    const token = jwt.sign({ userId: user._id },process.env.JWT_SECRET);
     successResponse({res,message:"LogIn Succefully",data:{token:token}});
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+export const getProfile = async (req, res, next) => {
+  try {
+    const { password, createdAt, updatedAt, __v, ...rest } = req.user._doc;
+    successResponse({ res, data: { ...rest, phone: decrypt(req.user.phone) } });
   } catch (error) {
     next(error);
   }
