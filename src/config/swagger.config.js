@@ -10,7 +10,7 @@ const options = {
     },
     servers: [
       {
-        url: "https://e-commerce-back-end-production-cd11.up.railway.app",
+        url: "https://my-pet-store-api.vercel.app",
       },
     ],
     components: {
