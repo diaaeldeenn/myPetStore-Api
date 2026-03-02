@@ -1,8 +1,4 @@
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import swaggerJsdoc from "swagger-jsdoc";
 
 const options = {
   definition: {
@@ -14,11 +10,22 @@ const options = {
     },
     servers: [
       {
-        url: process.env.NODE_ENV === "production"
-          ? "https://my-pet-store-api.vercel.app"
-          : "http://localhost:3000",
+        url: "https://e-commerce-back-end-production-cd11.up.railway.app",
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
   },
-  apis: [path.join(__dirname, "../modules/**/*.js")],
+  apis: ["./src/modules/**/*.js"],
 };
+
+const swaggerSpec = swaggerJsdoc(options);
+
+export default swaggerSpec;
