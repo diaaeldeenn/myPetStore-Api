@@ -6,7 +6,6 @@ import userRouter from "./modules/users/user.controller.js";
 import cors from "cors";
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 app.use(async (req, res, next) => {
   await connectionDB();
@@ -25,9 +24,5 @@ app.use("{/*demo}", (req, res) => {
 app.use((err, req, res, next) => {
   res.status(err.cause || 500).json({ message: err.message, stack: err.stack });
 });
-
-if (process.env.NODE_ENV !== "production") {
-  app.listen(port, () => console.log(`Sever Work On Port ${port}!`));
-}
 
 export default app;
