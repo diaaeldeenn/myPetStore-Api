@@ -7,9 +7,9 @@ export const addProduct = async (req, res, next) => {
   const { name, description, price, category, weight, rating } = req.body;
   try {
     const { secure_url, public_id } = await cloudinary.uploader.upload(
-      req.file.path,
+      `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
       {
-        folder: "myPetStore/products/fish",
+        folder: `myPetStore/products/${category}`,
       },
     );
     const product = await db_service.create({
@@ -54,13 +54,15 @@ export const getProducts = async (req, res, next) => {
   }
 };
 
-
 export const getSpeceficProduct = async (req, res, next) => {
-  const {productId} = req.params;
+  const { productId } = req.params;
   try {
-    const product = await db_service.findById({ model: productModel,id:productId });
-    if(!product){
-      throw new Error("Product Not Found",{cause:404});
+    const product = await db_service.findById({
+      model: productModel,
+      id: productId,
+    });
+    if (!product) {
+      throw new Error("Product Not Found", { cause: 404 });
     }
     successResponse({ res, status: 200, data: product });
   } catch (error) {
