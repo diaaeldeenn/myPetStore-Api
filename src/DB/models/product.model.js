@@ -9,6 +9,12 @@ const productSchema = new mongoose.Schema(
       minLength: 3,
       maxLength: 50,
     },
+    slug: {
+      type: String,
+      required: true,
+      minLength: 3,
+      maxLength: 50,
+    },
     description: {
       type: String,
       required: true,
@@ -31,7 +37,10 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     weight: {
-      type: String,
+      type: {
+        value: { type: Number, required: true },
+        unit: { type: String, required: true },
+      },
       required: true,
     },
     rating: {
@@ -39,7 +48,7 @@ const productSchema = new mongoose.Schema(
       min: 0,
       max: 5,
       default: 0,
-      required:true
+      required: true,
     },
   },
   {
