@@ -1,6 +1,5 @@
 import { get, incr, set, ttl_redis } from "../../../DB/redis/redis.service.js";
 import { Hash } from "../security/hash.security.js";
-import { eventEmitter } from "./email.event.js";
 import { email_Template } from "./email.template.js";
 import { generateOtp, sendEmail } from "./send.email.js";
 
@@ -19,17 +18,15 @@ export const sendEmailOtp = async (email) => {
     throw new Error("You Have Exceeded The Max Number Of Tries");
   }
   const otp = await generateOtp();
-  eventEmitter.emit("confirmEmail", async () => {
-    await sendEmail({
-      to: email,
-      subject: "🔐 Your Password Reset OTP (Expires in 2 Minutes)",
-      html: email_Template(otp,email),
-    });
-    await set({
-      key: `otp::${email}`,
-      value: Hash({ plainText: `${otp}` }),
-      ttl: 60 * 2,
-    });
-    await incr(`max_otp::${email}`);
+  await sendEmail({
+    to: email,
+    subject: "🔐 Your Password Reset OTP (Expires in 2 Minutes)",
+    html: email_Template(otp, email),
   });
+  await set({
+    key: `otp::${email}`,
+    value: Hash({ plainText: `${otp}` }),
+    ttl: 60 * 2,
+  });
+  await incr(`max_otp::${email}`);
 };
