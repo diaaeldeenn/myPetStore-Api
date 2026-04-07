@@ -8,10 +8,17 @@ const connectionDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     isConnected = true;
-    console.log("Connected Successfully");
+    console.log("Atlas Connected Successfully");
   } catch (error) {
-    console.log("Connection Failed");
+    console.log("Atlas Connection Failed");
     console.log(error.message);
+    if (process.env.NODE_ENV === "development") {
+      await mongoose.connect(process.env.MONGO_LOCAL);
+      isConnected = true;
+      console.log("Local DB Connected");
+    } else {
+      throw error;
+    }
   }
 };
 
