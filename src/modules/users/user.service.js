@@ -165,9 +165,7 @@ export const resetPassword = async (req, res, next) => {
     const user = await db_service.findOneAndUpdate({
       model: userModel,
       filter: {
-        email,
-        provider: ProviderEnum.system,
-        confirmed: { $exists: true },
+        email
       },
       update: {
         password: Hash({ plainText: newPassword }),
