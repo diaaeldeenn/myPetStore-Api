@@ -3,6 +3,9 @@ import connectionDB from "./DB/connectionDB.js";
 import userRouter from "./modules/users/user.controller.js";
 import cors from "cors";
 import productRouter from "./modules/products/product.controller.js";
+import { redisConnection } from "./DB/redis/redis.db.js";
+import { rateLimit } from "express-rate-limit";
+import helmet from "helmet";
 
 const app = express();
 
@@ -11,11 +14,19 @@ app.use(async (req, res, next) => {
   next();
 });
 
-app.use(cors(), express.json());
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 200, // Limit each IP to 200 requests per `window`
+  message: "To Many Request Try After 15 Minutes",
+  legacyHeaders: false,
+});
+
+app.use(cors(), helmet(), limiter, express.json());
 app.use("/src/DB/uploads",express.static("src/DB/uploads"));
 app.get("/", (req, res) => {
   res.status(200).json({ message: "Welcome In My Api" });
 });
+redisConnection();
 app.use("/users", userRouter);
 app.use("/products", productRouter);
 app.use("{/*demo}", (req, res) => {
