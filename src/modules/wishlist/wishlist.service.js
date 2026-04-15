@@ -11,6 +11,15 @@ export const addToWishlist = async (req, res) => {
     throw new Error("ProductId is required", { cause: 400 });
   }
 
+  const product = await db_service.findById({
+    model: productModel,
+    id: productId,
+  });
+
+  if (!product) {
+    throw new Error("Product not found", { cause: 404 });
+  }
+
   try {
     const item = await db_service.create({
       model: wishlistModel,
@@ -27,16 +36,6 @@ export const addToWishlist = async (req, res) => {
     if (err.code === 11000) {
       throw new Error("Product already in wishlist", { cause: 400 });
     }
-
-    const product = await db_service.findById({
-      model: productModel,
-      id: productId,
-    });
-
-    if (!product) {
-      throw new Error("Product not found", { cause: 404 });
-    }
-
     throw new Error("Server Error", { cause: 500 });
   }
 };
