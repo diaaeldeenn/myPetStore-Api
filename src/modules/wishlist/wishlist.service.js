@@ -76,3 +76,24 @@ export const getWishlist = async (req, res) => {
     },
   });
 };
+
+export const clearWishlist = async (req, res) => {
+  const userId = req.user._id;
+
+  const result = await db_service.deleteMany({
+    model: wishlistModel,
+    filter: { user: userId },
+  });
+
+  if (result.deletedCount === 0) {
+    throw new Error("Wishlist is already empty", { cause: 404 });
+  }
+
+  successResponse({
+    res,
+    message: "Wishlist cleared successfully",
+    data: {
+      deletedCount: result.deletedCount,
+    },
+  });
+};

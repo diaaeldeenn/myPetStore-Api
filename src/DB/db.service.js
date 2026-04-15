@@ -45,3 +45,7 @@ export const updateOne = async ({ model, filter={},update={},options={} } = {}) 
   const doc = model.updateOne(filter,update,{runValidators:true,...options});
   return await doc.exec();
 };
+
+export const deleteMany = async ({ model, filter = {} } = {}) => {
+  return await model.deleteMany(filter);
+};
