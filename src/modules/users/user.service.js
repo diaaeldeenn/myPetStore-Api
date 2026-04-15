@@ -1,29 +1,37 @@
 import { sendEmailOtp } from "../../common/utils/email/email.otp.js";
 import { successResponse } from "../../common/utils/response.success.js";
-import { decrypt, encrypt } from "../../common/utils/security/encrypt.security.js";
-import { CompareHash, Hash } from "../../common/utils/security/hash.security.js";
+import {
+  decrypt,
+  encrypt,
+} from "../../common/utils/security/encrypt.security.js";
+import {
+  CompareHash,
+  Hash,
+} from "../../common/utils/security/hash.security.js";
 import * as db_service from "../../DB/db.service.js";
 import userModel from "../../DB/models/user.model.js";
 import jwt from "jsonwebtoken";
-import {
-  deleteKey,
-  get,
-  set,
-} from "../../DB/redis/redis.service.js";
-
-
+import { deleteKey, get, set } from "../../DB/redis/redis.service.js";
 
 export const signUp = async (req, res, next) => {
-  const {userName,email,password,rePassword,age,gender,phone} = req.body;
+  const { userName, email, password, rePassword, age, gender, phone } =
+    req.body;
   if (await db_service.findOne({ model: userModel, filter: { email } })) {
-    throw new Error("User Already Exist",{cause:409});
+    throw new Error("User Already Exist", { cause: 409 });
   }
   try {
     const user = await db_service.create({
       model: userModel,
-      data: { userName, email, password:Hash({plainText:password}), age, gender,phone:encrypt(phone)},
+      data: {
+        userName,
+        email,
+        password: Hash({ plainText: password }),
+        age,
+        gender,
+        phone: encrypt(phone),
+      },
     });
-    successResponse({res,status:201,data:user});
+    successResponse({ res, status: 201, data: user });
   } catch (error) {
     res.status(500).json({
       message: "Server Error!",
@@ -33,28 +41,29 @@ export const signUp = async (req, res, next) => {
   }
 };
 
-
 export const signIn = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await db_service.findOne({
       model: userModel,
-      filter: {email},
+      filter: { email },
     });
     if (!user) {
-      throw new Error("User Not Exist",{cause:409});
+      throw new Error("User Not Exist", { cause: 409 });
     }
-    if (!CompareHash({plainText:password,cipherText:user.password})) {
-      throw new Error("Invalid Password",{cause:400});
+    if (!CompareHash({ plainText: password, cipherText: user.password })) {
+      throw new Error("Invalid Password", { cause: 400 });
     }
-    const token = jwt.sign({ userId: user._id },process.env.JWT_SECRET);
-    successResponse({res,message:"LogIn Succefully",data:{token:token}});
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+    successResponse({
+      res,
+      message: "LogIn Succefully",
+      data: { token: token },
+    });
   } catch (error) {
     next(error);
   }
 };
-
-
 
 export const getProfile = async (req, res, next) => {
   try {
@@ -65,12 +74,9 @@ export const getProfile = async (req, res, next) => {
   }
 };
 
-
-
-
 export const updateProfile = async (req, res, next) => {
   try {
-    let { firstName, lastName, gender, phone , age} = req.body;
+    let { firstName, lastName, gender, phone, age } = req.body;
     if (phone) {
       phone = encrypt(phone);
     }
@@ -91,8 +97,6 @@ export const updateProfile = async (req, res, next) => {
   }
 };
 
-
-
 export const updatePassword = async (req, res, next) => {
   try {
     let { oldPassword, newPassword } = req.body;
@@ -111,16 +115,13 @@ export const updatePassword = async (req, res, next) => {
   }
 };
 
-
-
-
 export const forgetPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
     const user = await db_service.findOne({
       model: userModel,
       filter: {
-        email
+        email,
       },
     });
     if (!user) {
@@ -132,8 +133,6 @@ export const forgetPassword = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 export const confirmPassword = async (req, res, next) => {
   try {
@@ -154,31 +153,50 @@ export const confirmPassword = async (req, res, next) => {
   }
 };
 
-
 export const resetPassword = async (req, res, next) => {
   try {
     const { email, newPassword } = req.body;
+
     const isVerified = await get(`verified_otp::${email}`);
     if (!isVerified) {
       throw new Error("Otp not verified");
     }
-    const user = await db_service.findOneAndUpdate({
+
+    const user = await db_service.findOne({
       model: userModel,
-      filter: {
-        email
-      },
+      filter: { email },
+    });
+
+    if (!user) {
+      throw new Error("User Not Exist", { cause: 409 });
+    }
+
+    const isSamePassword = CompareHash({
+      plainText: newPassword,
+      cipherText: user.password,
+    });
+
+    if (isSamePassword) {
+      throw new Error("New password must be different from old password", {
+        cause: 400,
+      });
+    }
+
+    await db_service.findOneAndUpdate({
+      model: userModel,
+      filter: { email },
       update: {
         password: Hash({ plainText: newPassword }),
         logOut: new Date(),
       },
     });
-    if (!user) {
-      throw new Error("User Not Exist", { cause: 409 });
-    }
+
     await deleteKey(`verified_otp::${email}`);
     await deleteKey(`confirm_tries::${email}`);
-    successResponse({ res, message: "Password Reset Succefully" });
+
+    successResponse({ res, message: "Password Reset Successfully" });
   } catch (error) {
     next(error);
   }
 };
+
