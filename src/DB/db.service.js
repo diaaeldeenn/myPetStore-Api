@@ -22,12 +22,21 @@ export const find = async ({ model, filter = {}, options = {} } = {}) => {
   if (options.limit) {
     doc.limit(options.limit);
   }
+  if (options.sort) {
+  doc.sort(options.sort);
+  }
   return await doc.exec();
 };
 
 
 export const findOneAndUpdate = async ({ model, filter={},update={},options={} } = {}) => {
   const doc = model.findOneAndUpdate(filter,update,{new:true,runValidators:true,...options});
+  return await doc.exec();
+};
+
+
+export const findOneAndDelete = async ({ model, filter = {}, options = {} } = {}) => {
+  const doc = model.findOneAndDelete(filter, options);
   return await doc.exec();
 };
 

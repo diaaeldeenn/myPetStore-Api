@@ -6,6 +6,7 @@ import productRouter from "./modules/products/product.controller.js";
 import { redisConnection } from "./DB/redis/redis.db.js";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
+import wishlistRouter from "./modules/wishlist/wishlist.controller.js";
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.get("/", (req, res) => {
 redisConnection();
 app.use("/users", userRouter);
 app.use("/products", productRouter);
+app.use("/wishlist", wishlistRouter);
 app.use("{/*demo}", (req, res) => {
   throw new Error(`Url ${req.originalUrl} Not Found!`, { cause: 404 });
 });
