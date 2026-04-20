@@ -73,3 +73,27 @@ export const getSpeceficProduct = async (req, res, next) => {
     });
   }
 };
+
+
+export const filterProducts = async (req, res, next) => {
+  const { category, name, minPrice, maxPrice } = req.query;
+  try {
+    const filter = {};
+    if (category) filter.category = category;
+    if (name) filter.name = { $regex: name, $options: "i" };
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    const products = await db_service.find({ model: productModel, filter });
+
+    successResponse({ res, status: 200, data: products });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      stack: error.stack,
+    });
+  }
+};

@@ -5,6 +5,7 @@ import { multerTypeEnum } from "../../common/enum/multer.enum.js";
 
 const productRouter = Router();
 productRouter.get("/",PD.getProducts);
+productRouter.get("/filter",PD.filterProducts);
 productRouter.get("/:productId",PD.getSpeceficProduct);
 productRouter.post("/",localMulter({fileExt:multerTypeEnum.image}).single("image"),PD.addProduct);
 
