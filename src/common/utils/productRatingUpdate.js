@@ -1,3 +1,5 @@
+import * as db_service from "../../DB/db.service.js";
+
 export const updateProductRating = async (productId) => {
   const reviews = await db_service.find({
     model: reviewModel,
