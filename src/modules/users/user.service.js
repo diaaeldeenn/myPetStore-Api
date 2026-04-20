@@ -264,6 +264,10 @@ export const updateAddress = async (req, res) => {
     id: userId,
   });
 
+  if (!user) {
+    throw new Error("User not found", { cause: 404 });
+  }
+
   const address = user.addresses.id(addressId);
 
   if (!address) {
@@ -273,12 +277,30 @@ export const updateAddress = async (req, res) => {
   if (city) address.city = city;
   if (details) address.details = details;
 
-  if (isDefault) {
-    user.addresses.forEach((a) => (a.isDefault = false));
-    address.isDefault = true;
+  if (isDefault !== undefined) {
+    if (isDefault === true) {
+      user.addresses.forEach((a) => (a.isDefault = false));
+
+      address.isDefault = true;
+    } else {
+      const hasAnotherDefault = user.addresses.some(
+        (a) => a._id.toString() !== addressId && a.isDefault === true,
+      );
+
+      if (!hasAnotherDefault) {
+        throw new Error("You must have at least one default address", {
+          cause: 400,
+        });
+      }
+
+      address.isDefault = false;
+    }
   }
 
   await user.save();
 
-  successResponse({ res, data: user.addresses });
+  successResponse({
+    res,
+    data: user.addresses,
+  });
 };
