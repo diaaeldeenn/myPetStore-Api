@@ -152,6 +152,10 @@ export const getCart = async (req, res) => {
   const cart = await db_service.findOne({
     model: cartModel,
     filter: { user: userId },
+    populate: {
+      path: "products.product",
+      select: "name price image",
+    },
   });
 
   if (!cart) {
