@@ -246,14 +246,45 @@ export const resetPasswordSchema = joi
   })
   .required();
 
-export const addAddressSchema = Joi.object({
-  city: Joi.string().min(2).required(),
-  details: Joi.string().min(5).required(),
-  isDefault: Joi.boolean().optional(),
-});
+export const addAddressSchema = joi
+  .object({
+    city: joi.string().min(2).required().messages({
+      "string.base": "City must be a string",
+      "string.empty": "City is required",
+      "string.min": "City must be at least 2 characters",
+      "any.required": "City is required",
+    }),
 
-export const updateAddressSchema = Joi.object({
-  city: Joi.string().min(2),
-  details: Joi.string().min(5),
-  isDefault: Joi.boolean(),
-}).min(1);
+    details: joi.string().min(5).required().messages({
+      "string.base": "Address details must be a string",
+      "string.empty": "Address details are required",
+      "string.min": "Address details must be at least 5 characters",
+      "any.required": "Address details are required",
+    }),
+
+    isDefault: joi.boolean().optional().messages({
+      "boolean.base": "isDefault must be true or false",
+    }),
+  })
+  .required();
+
+export const updateAddressSchema = joi
+  .object({
+    city: joi.string().min(2).messages({
+      "string.base": "City must be a string",
+      "string.min": "City must be at least 2 characters",
+    }),
+
+    details: joi.string().min(5).messages({
+      "string.base": "Address details must be a string",
+      "string.min": "Address details must be at least 5 characters",
+    }),
+
+    isDefault: joi.boolean().messages({
+      "boolean.base": "isDefault must be true or false",
+    }),
+  })
+  .min(1)
+  .messages({
+    "object.min": "You must provide at least one field to update",
+  });
