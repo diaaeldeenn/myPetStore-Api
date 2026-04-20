@@ -2,7 +2,7 @@ import { Router } from "express";
 import * as US from "./user.service.js";
 import { authentication } from "../../common/middleware/auth.js";
 import { schema } from "../../common/middleware/schema.js";
-import { confirmEmailSchema, emailSchema, resetPasswordSchema, signInSchema, signUpSchema, updatePasswordSchema, updateProfileSchema } from "../../common/middleware/schema/auth.schema.js";
+import { addAddressSchema, confirmEmailSchema, emailSchema, resetPasswordSchema, signInSchema, signUpSchema, updateAddressSchema, updatePasswordSchema, updateProfileSchema } from "../../common/middleware/schema/auth.schema.js";
 
 const userRouter = Router();
 
@@ -14,5 +14,9 @@ userRouter.patch("/updatePassword",authentication,schema(updatePasswordSchema),U
 userRouter.patch("/forgetPassword",schema(emailSchema),US.forgetPassword);
 userRouter.post("/confirmPassword",schema(confirmEmailSchema),US.confirmPassword);
 userRouter.patch("/resetPassword",schema(resetPasswordSchema),US.resetPassword);
+userRouter.post("/address", authentication,schema(addAddressSchema),US.addAddress);
+userRouter.get("/address", authentication, US.getAddress);
+userRouter.delete("/address/:addressId", authentication, US.removeAddress);
+userRouter.put("/address/:addressId", authentication,schema(updateAddressSchema),US.updateAddress);
 
 export default userRouter;

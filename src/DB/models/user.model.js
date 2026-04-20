@@ -25,12 +25,12 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required:true,
+      required: true,
       minLength: 8,
     },
     age: {
       type: Number,
-      required:true,
+      required: true,
       minLength: 18,
       maxLength: 60,
     },
@@ -40,6 +40,13 @@ const userSchema = new mongoose.Schema(
       default: GenderEnum.male,
     },
     phone: String,
+    addresses: [
+      {
+        city: String,
+        details: String,
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
   },
   {
     timestamps: true,

@@ -245,3 +245,15 @@ export const resetPasswordSchema = joi
     }),
   })
   .required();
+
+export const addAddressSchema = Joi.object({
+  city: Joi.string().min(2).required(),
+  details: Joi.string().min(5).required(),
+  isDefault: Joi.boolean().optional(),
+});
+
+export const updateAddressSchema = Joi.object({
+  city: Joi.string().min(2),
+  details: Joi.string().min(5),
+  isDefault: Joi.boolean(),
+}).min(1);

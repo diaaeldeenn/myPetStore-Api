@@ -200,3 +200,85 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
+export const addAddress = async (req, res) => {
+  const userId = req.user._id;
+  const { city, details, isDefault } = req.body;
+
+  if (!city || !details) {
+    throw new Error("City and details are required", { cause: 400 });
+  }
+
+  const user = await db_service.findById({
+    model: userModel,
+    id: userId,
+  });
+
+  if (isDefault) {
+    user.addresses.forEach((a) => (a.isDefault = false));
+  }
+
+  user.addresses.push({ city, details, isDefault });
+
+  await user.save();
+
+  successResponse({ res, data: user.addresses });
+};
+
+export const getAddress = async (req, res) => {
+  const user = await db_service.findById({
+    model: userModel,
+    id: req.user._id,
+  });
+
+  successResponse({ res, data: user.addresses });
+};
+
+export const removeAddress = async (req, res) => {
+  const { addressId } = req.params;
+
+  const user = await db_service.findById({
+    model: userModel,
+    id: req.user._id,
+  });
+
+  const address = user.addresses.id(addressId);
+
+  if (!address) {
+    throw new Error("Address not found", { cause: 404 });
+  }
+
+  address.deleteOne();
+
+  await user.save();
+
+  successResponse({ res, message: "Address removed" });
+};
+
+export const updateAddress = async (req, res) => {
+  const userId = req.user._id;
+  const { addressId } = req.params;
+  const { city, details, isDefault } = req.body;
+
+  const user = await db_service.findById({
+    model: userModel,
+    id: userId,
+  });
+
+  const address = user.addresses.id(addressId);
+
+  if (!address) {
+    throw new Error("Address not found", { cause: 404 });
+  }
+
+  if (city) address.city = city;
+  if (details) address.details = details;
+
+  if (isDefault) {
+    user.addresses.forEach((a) => (a.isDefault = false));
+    address.isDefault = true;
+  }
+
+  await user.save();
+
+  successResponse({ res, data: user.addresses });
+};
