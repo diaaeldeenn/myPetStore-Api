@@ -17,6 +17,6 @@ userRouter.patch("/resetPassword",schema(resetPasswordSchema),US.resetPassword);
 userRouter.post("/address", authentication,schema(addAddressSchema),US.addAddress);
 userRouter.get("/address", authentication, US.getAddress);
 userRouter.delete("/address/:addressId", authentication, US.removeAddress);
-userRouter.put("/address/:addressId", authentication,schema(updateAddressSchema),US.updateAddress);
+userRouter.patch("/address/:addressId", authentication,schema(updateAddressSchema),US.updateAddress);
 
 export default userRouter;

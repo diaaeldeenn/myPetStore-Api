@@ -201,7 +201,6 @@ export const resetPassword = async (req, res, next) => {
 };
 
 export const addAddress = async (req, res) => {
-  const userId = req.user._id;
   const { city, details, isDefault } = req.body;
 
   if (!city || !details) {
@@ -210,26 +209,33 @@ export const addAddress = async (req, res) => {
 
   const user = await db_service.findById({
     model: userModel,
-    id: userId,
+    id: req.user._id,
+    select: "addresses",
   });
 
-  if (isDefault) {
+  if (user.addresses.length >= 10) {
+    throw new Error("Maximum 10 addresses allowed", { cause: 400 });
+  }
+
+  const isFirst = user.addresses.length === 0;
+
+  if (isDefault || isFirst) {
     user.addresses.forEach((a) => (a.isDefault = false));
   }
 
-  user.addresses.push({ city, details, isDefault });
+  user.addresses.push({ city, details, isDefault: isFirst || !!isDefault });
 
   await user.save();
 
-  successResponse({ res, data: user.addresses });
+  successResponse({ res, data: user.addresses, status: 201 });
 };
 
 export const getAddress = async (req, res) => {
   const user = await db_service.findById({
     model: userModel,
     id: req.user._id,
+    select: "addresses",
   });
-
   successResponse({ res, data: user.addresses });
 };
 
@@ -239,6 +245,7 @@ export const removeAddress = async (req, res) => {
   const user = await db_service.findById({
     model: userModel,
     id: req.user._id,
+    select: "addresses",
   });
 
   const address = user.addresses.id(addressId);
@@ -247,7 +254,13 @@ export const removeAddress = async (req, res) => {
     throw new Error("Address not found", { cause: 404 });
   }
 
+  const wasDefault = address.isDefault;
+
   address.deleteOne();
+
+  if (wasDefault && user.addresses.length > 0) {
+    user.addresses[0].isDefault = true;
+  }
 
   await user.save();
 
@@ -255,18 +268,14 @@ export const removeAddress = async (req, res) => {
 };
 
 export const updateAddress = async (req, res) => {
-  const userId = req.user._id;
   const { addressId } = req.params;
   const { city, details, isDefault } = req.body;
 
   const user = await db_service.findById({
     model: userModel,
-    id: userId,
+    id: req.user._id,
+    select: "addresses",
   });
-
-  if (!user) {
-    throw new Error("User not found", { cause: 404 });
-  }
 
   const address = user.addresses.id(addressId);
 
@@ -277,30 +286,26 @@ export const updateAddress = async (req, res) => {
   if (city) address.city = city;
   if (details) address.details = details;
 
-  if (isDefault !== undefined) {
-    if (isDefault === true) {
-      user.addresses.forEach((a) => (a.isDefault = false));
+  if (isDefault === true) {
+    user.addresses.forEach((a) => (a.isDefault = false));
+    address.isDefault = true;
+  }
 
-      address.isDefault = true;
-    } else {
-      const hasAnotherDefault = user.addresses.some(
-        (a) => a._id.toString() !== addressId && a.isDefault === true,
-      );
+  if (isDefault === false) {
+    const hasOtherDefault = user.addresses.some(
+      (a) => a._id.toString() !== addressId && a.isDefault,
+    );
 
-      if (!hasAnotherDefault) {
-        throw new Error("You must have at least one default address", {
-          cause: 400,
-        });
-      }
-
-      address.isDefault = false;
+    if (!hasOtherDefault) {
+      throw new Error("You must have at least one default address", {
+        cause: 400,
+      });
     }
+
+    address.isDefault = false;
   }
 
   await user.save();
 
-  successResponse({
-    res,
-    data: user.addresses,
-  });
+  successResponse({ res, data: user.addresses });
 };
