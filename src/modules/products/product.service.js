@@ -3,14 +3,21 @@ import { successResponse } from "../../common/utils/response.success.js";
 import * as db_service from "../../DB/db.service.js";
 import productModel from "../../DB/models/product.model.js";
 
+const shuffleProducts = (products) => {
+  let seed = 42;
+  const seededRandom = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  return products.sort(() => seededRandom() - 0.5);
+};
+
 export const addProduct = async (req, res, next) => {
   const { name, description, price, category, weight, rating } = req.body;
   try {
     const { secure_url, public_id } = await cloudinary.uploader.upload(
       `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`,
-      {
-        folder: `myPetStore/products/${category}`,
-      },
+      { folder: `myPetStore/products/${category}` },
     );
     const product = await db_service.create({
       model: productModel,
@@ -27,7 +34,6 @@ export const addProduct = async (req, res, next) => {
     successResponse({ res, status: 201, data: product });
   } catch (error) {
     res.status(500).json({
-      message: "Server Error!",
       message: error.message,
       stack: error.stack,
     });
@@ -36,18 +42,43 @@ export const addProduct = async (req, res, next) => {
 
 export const getProducts = async (req, res, next) => {
   try {
-    const products = await db_service.find({ model: productModel });
-    //^To Shuffle The Products
-    let seed = 42;
-    const seededRandom = () => {
-      seed = (seed * 16807) % 2147483647;
-      return seed / 2147483647;
-    };
-    const shuffled = products.sort(() => seededRandom() - 0.5);
-    successResponse({ res, status: 200, data: shuffled });
+    const { page, limit: limitQuery } = req.query;
+
+    let products;
+    let paginationData = null;
+
+    if (page || limitQuery) {
+      const currentPage = Math.max(1, parseInt(page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(limitQuery) || 10));
+      const skip = (currentPage - 1) * limit;
+      const total = await productModel.countDocuments();
+
+      products = await db_service.find({
+        model: productModel,
+        options: { skip, limit },
+      });
+
+      paginationData = {
+        total,
+        page: currentPage,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } else {
+      products = await db_service.find({ model: productModel });
+    }
+
+    const shuffled = shuffleProducts(products);
+
+    successResponse({
+      res,
+      status: 200,
+      data: paginationData
+        ? { products: shuffled, pagination: paginationData }
+        : shuffled,
+    });
   } catch (error) {
     res.status(500).json({
-      message: "Server Error!",
       message: error.message,
       stack: error.stack,
     });
@@ -67,16 +98,21 @@ export const getSpeceficProduct = async (req, res, next) => {
     successResponse({ res, status: 200, data: product });
   } catch (error) {
     res.status(500).json({
-      message: "Server Error!",
       message: error.message,
       stack: error.stack,
     });
   }
 };
 
-
 export const filterProducts = async (req, res, next) => {
-  const { category, name, minPrice, maxPrice } = req.query;
+  const {
+    category,
+    name,
+    minPrice,
+    maxPrice,
+    page,
+    limit: limitQuery,
+  } = req.query;
   try {
     const filter = {};
     if (category) filter.category = category;
@@ -87,9 +123,40 @@ export const filterProducts = async (req, res, next) => {
       if (maxPrice) filter.price.$lte = Number(maxPrice);
     }
 
-    const products = await db_service.find({ model: productModel, filter });
+    let products;
+    let paginationData = null;
 
-    successResponse({ res, status: 200, data: products });
+    if (page || limitQuery) {
+      const currentPage = Math.max(1, parseInt(page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(limitQuery) || 10));
+      const skip = (currentPage - 1) * limit;
+      const total = await productModel.countDocuments(filter);
+
+      products = await db_service.find({
+        model: productModel,
+        filter,
+        options: { skip, limit },
+      });
+
+      paginationData = {
+        total,
+        page: currentPage,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } else {
+      products = await db_service.find({ model: productModel, filter });
+    }
+
+    const shuffled = shuffleProducts(products);
+
+    successResponse({
+      res,
+      status: 200,
+      data: paginationData
+        ? { products: shuffled, pagination: paginationData }
+        : shuffled,
+    });
   } catch (error) {
     res.status(500).json({
       message: error.message,
