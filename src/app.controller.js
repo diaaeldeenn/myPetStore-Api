@@ -9,8 +9,13 @@ import helmet from "helmet";
 import wishlistRouter from "./modules/wishlist/wishlist.controller.js";
 import cartRouter from "./modules/cart/cart.controller.js";
 import reviewRouter from "./modules/reviews/review.controller.js";
+import { stripeWebhook } from "./modules/orders/order.service.js";
+import orderRouter from "./modules/orders/order.controller.js";
+
 
 const app = express();
+app.post("/webhooks/stripe", express.raw({ type: "application/json" }), stripeWebhook);
+
 
 app.use(async (req, res, next) => {
   await connectionDB();
@@ -35,6 +40,7 @@ app.use("/products", productRouter);
 app.use("/wishlist", wishlistRouter);
 app.use("/cart", cartRouter);
 app.use("/products/:productId/reviews", reviewRouter);
+app.use("/orders", orderRouter);
 app.use("{/*demo}", (req, res) => {
   throw new Error(`Url ${req.originalUrl} Not Found!`, { cause: 404 });
 });

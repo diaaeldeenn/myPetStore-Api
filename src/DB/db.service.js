@@ -2,8 +2,8 @@ export const create = async ({ model, data } = {}) => {
   return await model.create(data);
 };
 
-export const findOne = async ({ model, filter = {}, populate = [], select = "" } = {}) => {
-  return await model.findOne(filter).populate(populate).select(select)
+export const findOne = async ({ model, filter = {}, populate = [],sort = {}, select = "" } = {}) => {
+  return await model.findOne(filter).populate(populate).select(select).sort(sort)
 };
 
 export const findById = async ({ model, id, populate = [], select = "" } = {}) => {
@@ -44,6 +44,10 @@ export const findOneAndDelete = async ({ model, filter = {}, options = {} } = {}
 export const updateOne = async ({ model, filter={},update={},options={} } = {}) => {
   const doc = model.updateOne(filter,update,{runValidators:true,...options});
   return await doc.exec();
+};
+
+export const updateMany = async ({ model, filter = {}, update = {} } = {}) => {
+  return await model.updateMany(filter, update, { runValidators: true });
 };
 
 export const deleteMany = async ({ model, filter = {} } = {}) => {
