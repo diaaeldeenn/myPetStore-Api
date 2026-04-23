@@ -42,7 +42,7 @@ app.use("/wishlist", wishlistRouter);
 app.use("/cart", cartRouter);
 app.use("/products/:productId/reviews", reviewRouter);
 app.use("/orders", orderRouter);
-app.use("/orders", couponRouter);
+app.use("/coupons", couponRouter);
 app.use("{/*demo}", (req, res) => {
   throw new Error(`Url ${req.originalUrl} Not Found!`, { cause: 404 });
 });
