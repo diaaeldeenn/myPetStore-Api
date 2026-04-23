@@ -8,6 +8,9 @@ import { paymentMethod, status } from "../../common/enum/order.enum.js";
 const clearCart = async (cart) => {
   cart.products = [];
   cart.totalPrice = 0;
+  cart.couponCode = null;
+  cart.discountAmount = 0;
+  cart.discountedPrice = 0;
   await cart.save();
 };
 
