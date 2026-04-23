@@ -140,6 +140,9 @@ export const clearCart = async (req, res) => {
 
   cart.products = [];
   cart.totalPrice = 0;
+  cart.couponCode = null;
+  cart.discountAmount = 0;
+  cart.discountedPrice = 0;
 
   await cart.save();
 

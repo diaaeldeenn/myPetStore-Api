@@ -22,7 +22,11 @@ const generateOrderNumber = async () => {
 
 export const createOrder = async (req, res) => {
   const userId = req.user._id;
-  const { address, phone, paymentMethod: method = paymentMethod.cash } = req.body;
+  const {
+    address,
+    phone,
+    paymentMethod: method = paymentMethod.cash,
+  } = req.body;
 
   if (!address || !phone) {
     throw new Error("Address and phone required", { cause: 400 });
@@ -37,6 +41,11 @@ export const createOrder = async (req, res) => {
   if (!cart || cart.products.length === 0) {
     throw new Error("Cart is empty", { cause: 400 });
   }
+
+  const finalPrice =
+    cart.couponCode && cart.discountedPrice > 0
+      ? cart.discountedPrice
+      : cart.totalPrice;
 
   const mappedProducts = cart.products.map((item) => ({
     product: item.product._id,
@@ -54,10 +63,11 @@ export const createOrder = async (req, res) => {
         orderNumber,
         user: userId,
         products: mappedProducts,
-        totalPrice: cart.totalPrice,
+        totalPrice: finalPrice,
         address,
         phone,
         paymentMethod: paymentMethod.cash,
+        couponCode: cart.couponCode || null,
       },
     });
 
@@ -82,6 +92,8 @@ export const createOrder = async (req, res) => {
       userId: userId.toString(),
       address,
       phone,
+      finalPrice: finalPrice.toString(),
+      couponCode: cart.couponCode || "",
     },
   });
 
@@ -96,7 +108,7 @@ export const stripeWebhook = async (req, res) => {
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch {
     return res.status(400).send("Webhook Error");
@@ -120,7 +132,8 @@ export const stripeWebhook = async (req, res) => {
       populate: [{ path: "products.product", select: "name" }],
     });
 
-    if (!cart || cart.products.length === 0) return res.json({ received: true });
+    if (!cart || cart.products.length === 0)
+      return res.json({ received: true });
 
     const orderNumber = await generateOrderNumber();
 
@@ -135,7 +148,8 @@ export const stripeWebhook = async (req, res) => {
           price: item.price,
           name: item.product.name,
         })),
-        totalPrice: cart.totalPrice,
+        totalPrice: parseFloat(session.metadata.finalPrice) || cart.totalPrice,
+        couponCode: session.metadata.couponCode || null,
         address,
         phone,
         paymentMethod: paymentMethod.card,
