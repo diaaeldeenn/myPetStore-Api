@@ -1,4 +1,4 @@
-# 🐾 myPetStore — Backend API
+# 🐾 MyPets Store — Backend API
 
 A full-featured **e-commerce REST API** for a pet food & supplies store — built with real-world architecture decisions, security at every layer, and a complete shopping experience covering everything from authentication to order fulfillment.
 
@@ -53,6 +53,7 @@ src/
 │   │   └── schema/
 │   │       ├── auth.schema.js
 │   │       ├── cart.schema.js
+│   │       ├── coupon.schema.js
 │   │       ├── order.schema.js
 │   │       ├── review.schema.js
 │   │       └── wishlist.schema.js
@@ -75,6 +76,7 @@ src/
 │   ├── db.service.js
 │   ├── models/
 │   │   ├── cart.model.js
+│   │   ├── coupon.model.js
 │   │   ├── order.model.js
 │   │   ├── product.model.js
 │   │   ├── review.model.js
@@ -85,23 +87,12 @@ src/
 │       └── redis.service.js
 └── modules/
     ├── cart/
-    │   ├── cart.controller.js
-    │   └── cart.service.js
+    ├── coupons/
     ├── orders/
-    │   ├── order.controller.js
-    │   └── order.service.js
     ├── products/
-    │   ├── product.controller.js
-    │   └── product.service.js
     ├── reviews/
-    │   ├── review.controller.js
-    │   └── review.service.js
     ├── users/
-    │   ├── user.controller.js
-    │   └── user.service.js
     └── wishlist/
-        ├── wishlist.controller.js
-        └── wishlist.service.js
 ```
 
 ---
@@ -110,11 +101,11 @@ src/
 
 - **AES-256-CBC encryption** for sensitive user data (phone numbers)
 - **Bcrypt hashing** with 12 salt rounds for passwords
-- **JWT authentication** for protected routes
-- **OTP system** with expiration (2 min), resend cooldown, and auto-block after 3 failed attempts (5 min block) — all managed via Redis TTL
+- **JWT authentication** for all protected routes
+- **OTP system** with 2-minute expiration, resend cooldown, and auto-block after 3 failed attempts (5-minute block) — all managed via Redis TTL
 - **Rate limiting** — 200 requests per 15 minutes per IP via `express-rate-limit`
 - **Helmet** for HTTP security headers
-- **Input validation** on all endpoints via Joi schemas
+- **Joi validation** schemas on every endpoint
 
 ---
 
@@ -130,47 +121,55 @@ src/
 ### User
 - Get Profile (phone returned decrypted)
 - Update Profile
-- Address Book — add, get, update, delete with default address logic (max 10 addresses)
+- Address Book — add, get, update, delete with default address logic (max 10 addresses per user)
 
 ### Products
-- Get All Products (with optional pagination)
+- Get All Products with optional pagination
 - Get Specific Product
-- Filter Products by category, name (partial match), min/max price (with optional pagination)
-- Products are shuffled using a seeded random algorithm
+- Filter Products by category, name (partial match), min/max price with optional pagination
+- Products shuffled using a seeded random algorithm
 
 ### Reviews
-- Get all reviews for a product (populated with user info)
-- Add Review (one review per user per product)
-- Update Review (own review only)
-- Delete Review (own review only)
-- Product rating auto-recalculated after every add / update / delete
+- Get all reviews for a product (populated with user info, sorted newest first)
+- Add Review — one review per user per product
+- Update Review — own review only
+- Delete Review — own review only
+- Product `rating` auto-recalculated as average after every add / update / delete
 
 ### Wishlist
-- Add to Wishlist (duplicate prevention via unique DB index)
-- Get Wishlist (populated with full product data)
+- Add to Wishlist — duplicate prevention via unique DB index on (user + product)
+- Get Wishlist — populated with full product data
 - Remove from Wishlist
 - Clear Wishlist
 
 ### Cart
-- Add to Cart (creates cart if not exists, increments quantity if product already in cart)
-- Get Cart (populated with product name, price, image)
-- Update Cart Quantity (quantity ≤ 0 removes the product automatically)
+- Add to Cart — creates cart if not exists, increments quantity if product already in cart
+- Get Cart — populated with product name, price, and image
+- Update Cart Quantity — setting quantity ≤ 0 removes the product automatically
 - Remove from Cart
 - Clear Cart
-- Total price recalculated automatically after every operation
+- `totalPrice` recalculated automatically after every operation
+
+### Coupons
+- Apply Coupon — validates and applies discount directly on the cart, updates `couponCode`, `discountAmount`, and `discountedPrice`
+- Remove Coupon — resets cart coupon fields and frees the coupon for reuse
+- Supports two discount types: **percentage** and **fixed amount**
+- Each user can use each coupon **only once**
+- Coupon validation covers: expiry date, max usage limit, and per-user duplicate usage
 
 ### Orders
 - Create Order — supports **cash on delivery** and **card payment via Stripe**
-- For card payments a Stripe Checkout session URL is returned
+- If a coupon was applied on the cart, the order automatically uses `discountedPrice`
+- For card payments, a Stripe Checkout session is created — each product's price in Stripe reflects the post-discount price proportionally
 - Stripe Webhook handler creates the order and clears the cart after confirmed payment
 - Duplicate webhook event protection via `stripeSessionId`
-- Get My Orders (sorted by most recent)
-- Cancel Order (allowed only when status is `pending` or `confirmed`)
+- Get My Orders — sorted by most recent
+- Cancel Order — allowed only when status is `pending` or `confirmed`
 
 ### Automated Order Lifecycle (node-cron)
 - Runs every hour
-- Orders in `pending` status for more than **6 hours** are auto-confirmed
-- Orders in `confirmed` status for more than **24 hours** are auto-shipped
+- Orders in `pending` status for more than **6 hours** → auto-confirmed
+- Orders in `confirmed` status for more than **24 hours** → auto-shipped
 
 ---
 
@@ -186,20 +185,39 @@ Cancellation is allowed only at `pending` or `confirmed` status.
 
 ---
 
+## 🏷️ Coupon System
+
+| Code | Type | Discount |
+|------|------|----------|
+| `MYPETSSTORE` | percentage | 100% |
+| `ENG.DIAA ELDEEN` | percentage | 100% |
+| `SAVE10` | percentage | 10% |
+| `SAVE20` | percentage | 20% |
+| `SAVE30` | percentage | 30% |
+| `SAVE50` | percentage | 50% |
+| `WELCOME15` | percentage | 15% |
+| `PETS25` | percentage | 25% |
+| `OFF50` | fixed | 50 EGP |
+| `OFF100` | fixed | 100 EGP |
+| `OFF200` | fixed | 200 EGP |
+| `OFF500` | fixed | 500 EGP |
+
+---
+
 ## 💳 Payment Flow
 
 ### Cash on Delivery
 ```
-POST /orders  →  order created immediately  →  cart cleared
+POST /orders → order created immediately → cart cleared
 ```
 
 ### Card (Stripe)
 ```
-POST /orders  →  Stripe Checkout session created  →  URL returned to client
+POST /orders → Stripe Checkout session created → URL returned to client
      ↓
 User completes payment on Stripe
      ↓
-POST /webhooks/stripe  →  order created  →  cart cleared
+POST /webhooks/stripe → order created → cart cleared
 ```
 
 ---
@@ -207,9 +225,9 @@ POST /webhooks/stripe  →  order created  →  cart cleared
 ## 📧 OTP Flow
 
 ```
-PATCH /users/forgetPassword   →  OTP sent to email (valid 2 min)
-POST  /users/confirmPassword  →  OTP verified, verification token saved in Redis (valid 5 min)
-PATCH /users/resetPassword    →  new password set (must differ from current)
+PATCH /users/forgetPassword  →  OTP sent to email (valid 2 min)
+POST  /users/confirmPassword →  OTP verified, verification token saved in Redis (valid 5 min)
+PATCH /users/resetPassword   →  new password set (must differ from current)
 ```
 
 ---
@@ -282,13 +300,7 @@ Full Postman documentation covering all endpoints, request bodies, headers, para
 
 ---
 
-## 📌 API Base URL
-
-```
-https://my-pet-store-api.vercel.app
-```
-
-### Quick Endpoint Reference
+## 📌 Quick Endpoint Reference
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
@@ -320,6 +332,8 @@ https://my-pet-store-api.vercel.app
 | PATCH | `/cart` | Yes | Update Quantity |
 | DELETE | `/cart/:productId` | Yes | Remove from Cart |
 | DELETE | `/cart` | Yes | Clear Cart |
+| POST | `/coupons/apply` | Yes | Apply Coupon |
+| DELETE | `/coupons/remove` | Yes | Remove Coupon |
 | POST | `/orders` | Yes | Create Order |
 | GET | `/orders` | Yes | Get My Orders |
 | PATCH | `/orders/:orderId/cancel` | Yes | Cancel Order |
@@ -328,7 +342,7 @@ https://my-pet-store-api.vercel.app
 
 ## 👤 Author
 
-**Eng.Diaa Eldeen**
+**Eng. Diaa Eldeen**
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue)](https://www.linkedin.com/in/diaaelseady)
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-black)](https://github.com/diaaeldeenn)
