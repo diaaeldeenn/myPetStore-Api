@@ -81,14 +81,23 @@ export const createOrder = async (req, res) => {
   const session = await stripe.checkout.sessions.create({
     payment_method_types: [paymentMethod.card],
     mode: "payment",
-    line_items: cart.products.map((item) => ({
-      price_data: {
-        currency: "egp",
-        product_data: { name: item.product.name },
-        unit_amount: item.price * 100,
-      },
-      quantity: item.quantity,
-    })),
+    line_items: cart.products.map((item) => {
+      const itemTotal = item.price * item.quantity;
+      const itemRatio = cart.totalPrice > 0 ? itemTotal / cart.totalPrice : 1;
+      const discountedTotal =
+        cart.couponCode && cart.discountedPrice > 0
+          ? cart.discountedPrice * itemRatio
+          : itemTotal;
+
+      return {
+        price_data: {
+          currency: "egp",
+          product_data: { name: item.product.name },
+          unit_amount: Math.round((discountedTotal / item.quantity) * 100),
+        },
+        quantity: item.quantity,
+      };
+    }),
     success_url: `${process.env.CLIENT_URL}/success`,
     cancel_url: `${process.env.CLIENT_URL}/cancel`,
     metadata: {
