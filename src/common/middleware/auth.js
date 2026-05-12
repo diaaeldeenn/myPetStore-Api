@@ -26,3 +26,25 @@ export const authentication = async (req, res, next) => {
     return res.status(401).json({ message: error.message });
   }
 };
+
+
+
+export const optionalAuthentication = async (req, res, next) => {
+  try {
+    const { token } = req.headers;
+    if (!token) return next();
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded?.userId) return next();
+
+    const user = await db_service.findOne({
+      model: userModel,
+      filter: { _id: decoded.userId },
+    });
+
+    req.user = user || null;
+    next();
+  } catch (error) {
+    next();
+  }
+};
