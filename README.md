@@ -296,7 +296,7 @@ npm start
 
 Full Postman documentation covering all endpoints, request bodies, headers, params, and response examples:
 
-🔗 **[View API Docs](https://documenter.getpostman.com/view/49715513/2sBXqFLhKk)**
+🔗 **[View API Docs](https://documenter.getpostman.com/view/49715513/2sBXqGqM2x)**
 
 ---
 
