@@ -1,4 +1,3 @@
-import natural from "natural";
 import faqModel from "../../DB/models/faq.model.js";
 import productModel from "../../DB/models/product.model.js";
 import orderModel from "../../DB/models/order.model.js";
@@ -24,8 +23,6 @@ export const normalizeText = (value = "") =>
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
-
-const tokenizer = new natural.WordTokenizer();
 
 const INTENTS = {
   price: [
@@ -87,37 +84,12 @@ const INTENTS = {
 };
 
 const detectIntent = (normalized) => {
-  let bestIntent = "faq";
-  let bestScore = 0;
-
   for (const [intent, keywords] of Object.entries(INTENTS)) {
-    let currentScore = 0;
-
-    for (const keyword of keywords) {
-      const normalizedKeyword = normalizeText(keyword);
-
-      if (normalized.includes(normalizedKeyword)) {
-        currentScore += 3;
-        continue;
-      }
-
-      const similarity = natural.JaroWinklerDistance(
-        normalized,
-        normalizedKeyword,
-      );
-
-      if (similarity >= 0.88) {
-        currentScore += similarity * 2;
-      }
-    }
-
-    if (currentScore > bestScore) {
-      bestScore = currentScore;
-      bestIntent = intent;
+    if (keywords.some((k) => normalized.includes(normalizeText(k)))) {
+      return intent;
     }
   }
-
-  return bestIntent;
+  return "faq";
 };
 
 const STOP_WORDS = new Set([
@@ -165,19 +137,15 @@ const STOP_WORDS = new Set([
 ]);
 
 const extractProductName = (normalized) =>
-  tokenizer
-    .tokenize(normalized)
+  normalized
+    .split(" ")
     .filter((w) => w.length > 1 && !STOP_WORDS.has(w))
     .join(" ")
     .trim();
 
 const handlePrice = async (normalized) => {
   const searchTerm = extractProductName(normalized);
-
-  if (!searchTerm)
-    return {
-      answer: "Please mention the product name you want its price for.",
-    };
+  if (!searchTerm) return { answer: "اذكر اسم المنتج اللي عايز تعرف سعره." };
 
   const products = await productModel
     .find({ name: { $regex: searchTerm, $options: "i" } })
@@ -186,32 +154,23 @@ const handlePrice = async (normalized) => {
     .lean();
 
   if (!products.length)
-    return {
-      answer: `No product found matching "${searchTerm}". Try another name.`,
-    };
+    return { answer: `مش لاقي منتج باسم "${searchTerm}"، جرب تكتب اسم تاني.` };
 
   if (products.length === 1) {
     const p = products[0];
-
     return {
-      answer: `🛍️ ${p.name}\n💰 Price: ${p.price} EGP\n📦 Category: ${p.category}`,
+      answer: `🛍️ *${p.name}*\n💰 السعر: ${p.price} جنيه\n📦 الفئة: ${p.category}`,
       products,
     };
   }
 
-  const list = products.map((p) => `• ${p.name} — ${p.price} EGP`).join("\n");
-
-  return {
-    answer: `I found multiple products:\n${list}`,
-    products,
-  };
+  const list = products.map((p) => `• ${p.name} — ${p.price} جنيه`).join("\n");
+  return { answer: `لقيت أكتر من منتج:\n${list}`, products };
 };
 
 const handleAvailability = async (normalized) => {
   const searchTerm = extractProductName(normalized);
-
-  if (!searchTerm)
-    return { answer: "Please mention the product name you are asking about." };
+  if (!searchTerm) return { answer: "اذكر اسم المنتج اللي عايز تعرف عنه." };
 
   const products = await productModel
     .find({ name: { $regex: searchTerm, $options: "i" } })
@@ -221,24 +180,19 @@ const handleAvailability = async (normalized) => {
 
   if (!products.length)
     return {
-      answer: `No available product found matching "${searchTerm}".`,
+      answer: `مش لاقي منتج باسم "${searchTerm}"، ممكن تبحث بكلمة تانية.`,
     };
 
   if (products.length === 1) {
     const p = products[0];
-
     return {
-      answer: `✅ ${p.name} is available.\n💰 Price: ${p.price} EGP\n📦 Category: ${p.category}`,
+      answer: `✅ أيوه، *${p.name}* متاح!\n💰 السعر: ${p.price} جنيه\n📦 الفئة: ${p.category}`,
       products,
     };
   }
 
-  const list = products.map((p) => `• ${p.name} — ${p.price} EGP`).join("\n");
-
-  return {
-    answer: `✅ Available products:\n${list}`,
-    products,
-  };
+  const list = products.map((p) => `• ${p.name} — ${p.price} جنيه`).join("\n");
+  return { answer: `✅ الآتي متاح:\n${list}`, products };
 };
 
 const handleCategory = async (normalized) => {
@@ -257,23 +211,15 @@ const handleCategory = async (normalized) => {
   };
 
   let matchedCategory = null;
-
   for (const [key, val] of Object.entries(categoryMap)) {
-    const normalizedKey = normalizeText(key);
-
-    if (
-      normalized.includes(normalizedKey) ||
-      natural.JaroWinklerDistance(normalized, normalizedKey) >= 0.9
-    ) {
+    if (normalized.includes(normalizeText(key))) {
       matchedCategory = val;
       break;
     }
   }
 
   if (!matchedCategory)
-    return {
-      answer: "Please mention the pet category you are looking for.",
-    };
+    return { answer: "اذكر نوع الحيوان الأليف اللي بتسأل عنه." };
 
   const products = await productModel
     .find({ category: matchedCategory })
@@ -283,24 +229,18 @@ const handleCategory = async (normalized) => {
     .lean();
 
   if (!products.length)
-    return {
-      answer: `No products available right now for ${matchedCategory}.`,
-    };
+    return { answer: `مفيش منتجات متاحة دلوقتي لفئة ${matchedCategory}.` };
 
   const list = products
-    .map((p) => `• ${p.name} — ${p.price} EGP ⭐ ${p.rating}`)
+    .map((p) => `• ${p.name} — ${p.price} جنيه ⭐ ${p.rating}`)
     .join("\n");
-
-  return {
-    answer: `🐾 Top ${matchedCategory} products:\n${list}`,
-    products,
-  };
+  return { answer: `🐾 أحسن منتجات ${matchedCategory}:\n${list}`, products };
 };
 
 const handleOrders = async (userId) => {
   if (!userId)
     return {
-      answer: "You need to be logged in to view your orders.",
+      answer: "لازم تكون logged in عشان تشوف أوردراتك. سجل دخول وجرب تاني 🔒",
     };
 
   const orders = await orderModel
@@ -311,9 +251,7 @@ const handleOrders = async (userId) => {
     .lean();
 
   if (!orders.length)
-    return {
-      answer: "No orders found yet.",
-    };
+    return { answer: "مفيش أوردرات لحد دلوقتي. ابدأ تتسوق! 🛒" };
 
   const statusEmoji = {
     pending: "⏳",
@@ -326,19 +264,18 @@ const handleOrders = async (userId) => {
   const list = orders
     .map(
       (o) =>
-        `${statusEmoji[o.status] || "•"} Order #${o.orderNumber || o._id.toString().slice(-6)} — ${o.status} — ${o.totalPrice} EGP`,
+        `${statusEmoji[o.status] || "•"} أوردر #${o.orderNumber || o._id.toString().slice(-6)} — ${o.status} — ${o.totalPrice} جنيه`,
     )
     .join("\n");
 
-  return {
-    answer: `📋 Your latest orders:\n${list}`,
-  };
+  return { answer: `📋 أحدث أوردراتك:\n${list}` };
 };
 
 const handleWishlist = async (userId) => {
   if (!userId)
     return {
-      answer: "You need to be logged in to view your wishlist.",
+      answer:
+        "لازم تكون logged in عشان تشوف المفضلة بتاعتك. سجل دخول وجرب تاني 🔒",
     };
 
   const items = await wishlistModel
@@ -348,80 +285,45 @@ const handleWishlist = async (userId) => {
     .lean();
 
   if (!items.length)
-    return {
-      answer: "Your wishlist is empty right now.",
-    };
+    return { answer: "المفضلة فاضية دلوقتي. ضيف منتجات عجبوك! 💝" };
 
   const list = items
     .filter((i) => i.product)
-    .map((i) => `• ${i.product.name} — ${i.product.price} EGP`)
+    .map((i) => `• ${i.product.name} — ${i.product.price} جنيه`)
     .join("\n");
 
-  return {
-    answer: `💝 Your wishlist:\n${list}`,
-  };
+  return { answer: `💝 المفضلة بتاعتك:\n${list}` };
 };
 
 const handleCoupon = async (normalized) => {
   const words = normalized.split(" ");
-
   const codeIndex = words.findIndex((w) =>
     ["كوبون", "coupon", "كود", "code", "خصم"].includes(w),
   );
-
   const code =
     codeIndex !== -1 && words[codeIndex + 1]
       ? words[codeIndex + 1].toUpperCase()
       : null;
 
   if (!code)
-    return {
-      answer: "Please provide the coupon code. Example: SAVE20",
-    };
+    return { answer: "اذكر كود الكوبون عشان أتحقق منه. مثال: كوبون SAVE20" };
 
   return {
-    answer: `Go to your cart and enter the coupon code \"${code}\" to apply the discount. ✅`,
+    answer: `عشان تطبق الكوبون، روح على الـ Cart وادخل الكود "${code}" في خانة الكوبون. لو الكود صح هيتطبق الخصم على الفاتورة ✅`,
   };
 };
 
 const getKeywordScore = (normalizedMessage, keywords = []) => {
   let score = 0;
-
   const matchedKeywords = [];
-
-  const messageWords = tokenizer.tokenize(normalizedMessage);
-
   for (const keyword of keywords) {
     const nk = normalizeText(keyword);
-
     if (!nk) continue;
-
     if (normalizedMessage.includes(nk)) {
-      score += nk.split(" ").length > 1 ? 4 : 3;
-      matchedKeywords.push(keyword);
-      continue;
-    }
-
-    const keywordWords = tokenizer.tokenize(nk);
-
-    let localScore = 0;
-
-    for (const mw of messageWords) {
-      for (const kw of keywordWords) {
-        const similarity = natural.JaroWinklerDistance(mw, kw);
-
-        if (similarity >= 0.9) {
-          localScore += similarity;
-        }
-      }
-    }
-
-    if (localScore > 0) {
-      score += localScore;
+      score += nk.split(" ").length > 1 ? 3 : 2;
       matchedKeywords.push(keyword);
     }
   }
-
   return { score, matchedKeywords };
 };
 
@@ -432,28 +334,13 @@ const handleFaq = async (normalizedMessage) => {
     .lean();
 
   let bestMatch = null;
-
   for (const faq of faqs) {
     const { score, matchedKeywords } = getKeywordScore(
       normalizedMessage,
       faq.keywords,
     );
-
-    const normalizedQuestion = normalizeText(faq.question);
-
-    const questionSimilarity = natural.JaroWinklerDistance(
-      normalizedMessage,
-      normalizedQuestion,
-    );
-
-    const finalScore = score + questionSimilarity * 2;
-
-    if (finalScore > 1.5 && (!bestMatch || finalScore > bestMatch.score)) {
-      bestMatch = {
-        score: finalScore,
-        faq,
-        matchedKeywords,
-      };
+    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+      bestMatch = { score, faq, matchedKeywords };
     }
   }
 
@@ -474,100 +361,57 @@ export const getChatbotAnswer = async (message, userId = null) => {
     return {
       success: false,
       matched: false,
-      answer: "Please type your message first.",
+      answer: "من فضلك اكتب سؤالك أولًا.",
     };
 
   const intent = detectIntent(normalized);
 
   if (intent === "price") {
     const result = await handlePrice(normalized);
-
-    return {
-      success: true,
-      matched: true,
-      intent: "price",
-      ...result,
-    };
+    return { success: true, matched: true, intent: "price", ...result };
   }
 
   if (intent === "availability") {
     const result = await handleAvailability(normalized);
-
-    return {
-      success: true,
-      matched: true,
-      intent: "availability",
-      ...result,
-    };
+    return { success: true, matched: true, intent: "availability", ...result };
   }
 
   if (intent === "category") {
     const result = await handleCategory(normalized);
-
-    return {
-      success: true,
-      matched: true,
-      intent: "category",
-      ...result,
-    };
+    return { success: true, matched: true, intent: "category", ...result };
   }
 
   if (intent === "orders") {
     const result = await handleOrders(userId);
-
-    return {
-      success: true,
-      matched: true,
-      intent: "orders",
-      ...result,
-    };
+    return { success: true, matched: true, intent: "orders", ...result };
   }
 
   if (intent === "wishlist") {
     const result = await handleWishlist(userId);
-
-    return {
-      success: true,
-      matched: true,
-      intent: "wishlist",
-      ...result,
-    };
+    return { success: true, matched: true, intent: "wishlist", ...result };
   }
 
   if (intent === "coupon") {
     const result = await handleCoupon(normalized);
-
-    return {
-      success: true,
-      matched: true,
-      intent: "coupon",
-      ...result,
-    };
+    return { success: true, matched: true, intent: "coupon", ...result };
   }
 
   const faqResult = await handleFaq(normalized);
-
   if (faqResult)
-    return {
-      success: true,
-      matched: true,
-      intent: "faq",
-      ...faqResult,
-    };
+    return { success: true, matched: true, intent: "faq", ...faqResult };
 
   return {
     success: true,
     matched: false,
     intent: "unknown",
     answer:
-      "I could not fully understand your request. Try asking about products, prices, orders, wishlist, or coupons.",
+      "مش فاهم سؤالك كويس 😅 ممكن تسألني عن سعر منتج، أوردر، أو حاجة تانية؟",
   };
 };
 
 export const chatbotMessage = async (req, res, next) => {
   try {
     const { message } = req.body;
-
     const userId = req.user?._id || null;
 
     const result = await getChatbotAnswer(message, userId);
