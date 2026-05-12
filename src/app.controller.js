@@ -12,6 +12,7 @@ import reviewRouter from "./modules/reviews/review.controller.js";
 import { stripeWebhook } from "./modules/orders/order.service.js";
 import orderRouter from "./modules/orders/order.controller.js";
 import couponRouter from "./modules/coupons/coupon.controller.js";
+import chatbotRouter from "./modules/chatbot/chatbot.controller.js";
 
 
 const app = express();
@@ -43,6 +44,7 @@ app.use("/cart", cartRouter);
 app.use("/products/:productId/reviews", reviewRouter);
 app.use("/orders", orderRouter);
 app.use("/coupons", couponRouter);
+app.use("/chatbot", chatbotRouter);
 app.use("{/*demo}", (req, res) => {
   throw new Error(`Url ${req.originalUrl} Not Found!`, { cause: 404 });
 });
