@@ -99,7 +99,7 @@ export const createOrder = async (req, res) => {
       };
     }),
     success_url: `${process.env.CLIENT_URL}/success`,
-    cancel_url: `${process.env.CLIENT_URL}/cancel`,
+    cancel_url: `${process.env.CLIENT_URL}/failed`,
     metadata: {
       userId: userId.toString(),
       address,
